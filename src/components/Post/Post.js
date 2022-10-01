@@ -28,17 +28,13 @@ const ExpandMore = styled((props) => {
 }));
 
 const useStyles = makeStyles((theme) => ({
-  link: {
-    textDecoration: "none",
-    boxShadow: "none",
-    color: "white"
-  }
+
 }));
 
 function Post(props) {
   const { title, text, userId, userName, postId, likes } = props;
   const classes = useStyles();
-  const [expanded, setExpended] = useState(false);
+  const [expanded, setExpanded] = React.useState(false);
   const [error, setError] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [commentList, setCommentList] = useState([]);
@@ -46,9 +42,10 @@ function Post(props) {
   const isInitialMount = useRef(true);
   const [likeCount, setLikeCount] = useState(likes.length);
   const [likeId, setLikeId] = useState(null);
+  let disabled = localStorage.getItem("currentUser") == null ? true : false;
 
   const handleExpandClick = () => {
-    setExpended(!expanded);
+    setExpanded(!expanded);
     refreshComments();
     console.log(commentList);
   };
@@ -86,10 +83,11 @@ function Post(props) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": localStorage.getItem("tokenKey"),
       },
       body: JSON.stringify({
         postId: postId,
-        userId: userId
+        userId: localStorage.getItem("currentUser"),
       }),
     })
       .then((res) => res.json())
@@ -99,12 +97,15 @@ function Post(props) {
   const deleteLike = () => {
     fetch("/likes/" + likeId, {
       method: "DELETE",
+      headers: {
+        "Authorization": localStorage.getItem("tokenKey"),
+      },
     })
       .then((err) => console.log(err))
   }
 
   const checkLikes = () => {
-    var likeControl = likes.find((like => like.userId === userId));
+    var likeControl = likes.find((like => "" + like.userId === localStorage.getItem("currentUser")));
     if (likeControl != null) {
       setLikeId(likeControl.id);
       setIsLiked(true);
@@ -122,11 +123,11 @@ function Post(props) {
 
   return (
     <div className="postContainer">
-      <Card sx={{ width: "1000px", textAlign: "left", marginTop: 5, margin: 2 }}>
+      <Card sx={{ width: "1000px", textAlign: "left", marginTop: 5 }}>
         <CardHeader
           avatar={
             <Link className={classes.link} to={{ pathname: '/users/' + userId }}>
-              <Avatar sx={{ background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)' }} aria-label="recipe">
+              <Avatar sx={{ background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)" }} aria-label="recipe">
                 {userName.charAt(0).toUpperCase()}
               </Avatar>
             </Link>
@@ -139,18 +140,29 @@ function Post(props) {
           </Typography>
         </CardContent>
         <CardActions disableSpacing>
-          <IconButton
-            onClick={handleLike}
-            aria-label="add to favorites">
-            <FavoriteIcon style={isLiked ? { color: "red" } : null} />
-            {likeCount}
-          </IconButton>
+          {disabled ?
+            <IconButton
+              disabled
+              onClick={handleLike}
+              aria-label="add to favorites"
+            >
+              <FavoriteIcon style={isLiked ? { color: "red" } : null} />
+            </IconButton> :
+            <IconButton
+              onClick={handleLike}
+              aria-label="add to favorites"
+            >
+              <FavoriteIcon style={isLiked ? { color: "red" } : null} />
+            </IconButton>
+          }
+          {likeCount}
           <ExpandMore
             expand={expanded}
             onClick={handleExpandClick}
             aria-expanded={expanded}
             aria-label="show more"
-          ><CommentIcon />
+          >
+            <CommentIcon />
           </ExpandMore>
         </CardActions>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
@@ -160,7 +172,11 @@ function Post(props) {
                 isLoaded ? commentList.map(comment => (
                   <Comment userId={1} userName={"USER"} text={comment.text}></Comment>
                 )) : "Loading"}
-            <CommentForm userId={1} userName={"USER"} postId={postId}></CommentForm>
+            {disabled ? "" :
+              <CommentForm userId={userId}
+                userName={userName}
+                postId={postId}>
+              </CommentForm>}
           </Container>
         </Collapse>
       </Card>

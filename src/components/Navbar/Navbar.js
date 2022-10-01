@@ -7,9 +7,31 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import "./Navbar.scss";
+import { LockOpen } from "@mui/icons-material";
+import { useHistory } from "react-router-dom";
+import { makeStyles } from "@mui/styles";
+
+const useStyles = makeStyles((theme) => ({
+    link: {
+      textDecoration: "none",
+      boxShadow: "none",
+      color: "white"
+    }
+  }));
 
 function Navbar() {
-    let userId = 1;
+    
+    let history = useHistory();
+    const classes = useStyles();
+    const onClick = () => {
+        console.log("START");
+        localStorage.removeItem("tokenKey")
+        localStorage.removeItem("currentUser")
+        localStorage.removeItem("userName")
+        history.go(0)
+        console.log("END");
+    }
+
     return (
         <div>
             <Box sx={{ flexGrow: 1 }}>
@@ -20,16 +42,21 @@ function Navbar() {
                             edge="start"
                             color="inherit"
                             aria-label="menu"
-                            sx={{ mr: 2 }}
-
-                        >
+                            sx={{ mr: 2 }} >
                             <MenuIcon />
                         </IconButton>
                         <Typography variant="h6" component="div" textAlign="left" sx={{ flexGrow: 1 }}>
-                            <Link className="link" to="/">Home</Link>
+                            <Link className={classes.link} to="/">Home</Link>
                         </Typography>
                         <Typography variant="h6" component="div" >
-                            <Link className="link" to={{ pathname: '/users/' + userId }}>User</Link>
+                            { localStorage.getItem("currentUser") == null ?
+                                <Link className={classes.link} to="/auth">Login/Register</Link> :
+                                <div>
+                                    <IconButton className="link" onClick={onClick}><LockOpen></LockOpen></IconButton>
+                                    <Link className={classes.link} to={{ pathname: '/users/' + localStorage.getItem("currentUser") }}>
+                                        Profile
+                                    </Link>
+                                </div> }
                         </Typography>
                     </Toolbar>
                 </AppBar>
